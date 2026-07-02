@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  PATIENT
+}
+
+enum AppointmentStatus {
+  BOOKED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctor  Doctor?
+  patient Patient?
+}
+
+model Doctor {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  specialization String
+  workingStart   String
+  workingEnd     String
+  slotDuration   Int
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  leaves       Leave[]
+}
+
+model Patient {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  age       Int
+  gender    String
+  phone     String
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+}
+
+model Appointment {
+  id          String              @id @default(cuid())
+  doctorId    String
+  patientId   String
+  date        DateTime
+  startTime   String
+  endTime     String
+  symptoms    String?
+  aiSummary   String?
+  urgency     String?
+  doctorNotes String?
+  prescription String?
+  patientSummary String?
+  status      AppointmentStatus   @default(BOOKED)
+  createdAt   DateTime            @default(now())
+
+  doctor  Doctor  @relation(fields: [doctorId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@unique([doctorId, date, startTime])
+}
+
+model Leave {
+  id       String   @id @default(cuid())
+  doctorId String
+  date     DateTime
+  reason   String?
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+}
